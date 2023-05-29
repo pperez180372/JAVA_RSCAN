@@ -1,0 +1,562 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.github.java-native</groupId>
+  <artifactId>jssc</artifactId>
+  <version>2.9.4</version>
+
+  <name>Java Simple Serial Connector</name>
+  <description>
+    A small, single Java library for working with serial ports across various systems
+    based on the work from scream3r/java-simple-serial-connector.
+  </description>
+  <url>https://github.com/java-native/jssc</url>
+
+  <licenses>
+    <license>
+      <name>GNU LGPL 3</name>
+      <url>http://www.gnu.org/licenses/lgpl.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>Tres Finocchiaro</name>
+      <url>https://github.com/tresf</url>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:https://github.com/java-native/jssc.git</connection>
+    <developerConnection>scm:git:git@github.com:java-native/jssc.git</developerConnection>
+    <url>https://github.com/java-native/jssc</url>
+  </scm>
+
+  <repositories>
+    <repository>
+      <id>maven.scijava.org</id>
+      <name>SciJava</name>
+      <url>https://maven.scijava.org/content/groups/public/</url>
+    </repository>
+  </repositories>
+
+  <properties>
+    <target.java.version>6</target.java.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <!-- custom directories and file paths a-z -->
+    <cmake.generated.directory>${project.build.directory}/cmake</cmake.generated.directory>
+    <ant.properties.file>${project.build.directory}/props.properties</ant.properties.file>
+    <ant.project.basedir>${project.basedir}</ant.project.basedir>
+
+    <!-- profile-dependant flags a-z -->
+    <cmake.build.skip>false</cmake.build.skip>
+    <cmake.generate.skip>false</cmake.generate.skip>
+    <javah.skip>false</javah.skip>
+    <jar.dependencies.skip>true</jar.dependencies.skip>
+
+    <!-- dependency versions a-z -->
+    <dependency.junit.version>4.12</dependency.junit.version>
+    <dependency.logback.version>1.2.3</dependency.logback.version>
+    <dependency.nativelibloader.version>2.3.6</dependency.nativelibloader.version>
+
+    <!-- plugin versions a-z -->
+    <plugin.animalsniffer.version>1.17</plugin.animalsniffer.version>
+    <plugin.antrun.version>1.8</plugin.antrun.version>
+    <plugin.assembly.version>3.1.1</plugin.assembly.version>
+    <plugin.compiler.version>3.8.0</plugin.compiler.version>
+    <plugin.enforcer.version>3.0.0-M3</plugin.enforcer.version>
+    <plugin.jar.version>3.1.1</plugin.jar.version>
+    <plugin.javadoc.version>3.1.1</plugin.javadoc.version>
+    <plugin.nar.version>3.6.0</plugin.nar.version>
+    <plugin.osmaven.version>1.7.0</plugin.osmaven.version>
+    <plugin.signature.version>1.1</plugin.signature.version>
+    <plugin.source.version>3.0.1</plugin.source.version>
+    <plugin.surfire.version>3.0.0-M4</plugin.surfire.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.scijava</groupId>
+      <artifactId>native-lib-loader</artifactId>
+      <version>${dependency.nativelibloader.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>${dependency.junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>${dependency.logback.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <defaultGoal>install</defaultGoal>
+    <resources>
+        <resource>
+          <directory>${project.basedir}/src/main/resources-precompiled</directory>
+        </resource>
+    </resources>
+
+    <extensions>
+      <extension>
+        <groupId>kr.motd.maven</groupId>
+        <artifactId>os-maven-plugin</artifactId>
+        <version>${plugin.osmaven.version}</version>
+      </extension>
+    </extensions>
+
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${plugin.compiler.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>${plugin.javadoc.version}</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>${plugin.source.version}</version>
+        </plugin>
+
+      </plugins>
+
+    </pluginManagement>
+
+    <plugins>
+      <!-- Warn about not fully supported java version -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>${plugin.enforcer.version}</version>
+        <executions>
+          <execution>
+            <id>recommended-jdk</id>
+            <goals><goal>enforce</goal></goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>[9,)</version>
+                  <level>WARN</level>
+                  <message>Current JDK does not support Java Platform Module System. Resulting jar cannot be used as Java module.</message>
+                </requireJavaVersion>
+                <requireJavaVersion>
+                  <version>(,12)</version>
+                  <level>WARN</level>
+                  <message>Current JDK does not support target version 6. Minimal JRE to use the library on is ${target.java.version}.</message>
+                </requireJavaVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- create header file jdk<=8 -->
+      <plugin>
+        <groupId>com.github.maven-nar</groupId>
+        <artifactId>nar-maven-plugin</artifactId>
+        <version>${plugin.nar.version}</version>
+        <extensions>true</extensions>
+        <executions>
+          <execution>
+            <id>default-nar-javah</id>
+            <goals>
+              <goal>nar-javah</goal>
+            </goals>
+            <phase>compile</phase>
+            <configuration>
+              <skip>${javah.skip}</skip>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- execute cmake -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>${plugin.antrun.version}</version>
+        <executions>
+
+          <execution>
+            <id>gather-props</id>
+            <phase>validate</phase>
+            <goals><goal>run</goal></goals>
+            <configuration>
+              <target>
+                <ant dir="ant"/>
+                <property file="${ant.properties.file}" description="read props from ant"/>
+              </target>
+              <exportAntProperties>true</exportAntProperties>
+            </configuration>
+          </execution>
+
+          <execution>
+            <id>cmake-generate</id>
+            <goals><goal>run</goal></goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <skip>${cmake.generate.skip}</skip>
+              <target>
+                <ant dir="ant" target="cmake-generate"/>
+              </target>
+            </configuration>
+          </execution>
+
+          <execution>
+            <id>cmake-build</id>
+            <goals><goal>run</goal></goals>
+            <phase>compile</phase>
+            <configuration>
+              <skip>${cmake.build.skip}</skip>
+              <target>
+                <ant dir="ant" target="cmake-build"/>
+              </target>
+            </configuration>
+          </execution>
+
+          <execution>
+            <id>show-file-info</id>
+            <phase>install</phase>
+            <goals><goal>run</goal></goals>
+            <configuration>
+              <skip>${cmake.build.skip}</skip>
+              <target>
+                <ant dir="ant" target="show-file-info"/>
+              </target>
+            </configuration>
+          </execution>
+
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>${target.java.version}</source>
+          <target>${target.java.version}</target>
+          <compilerArgument>-Xlint:all</compilerArgument>
+          <showWarnings>true</showWarnings>
+          <showDeprecation>true</showDeprecation>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${plugin.surfire.version}</version>
+        <configuration>
+          <reuseForks>false</reuseForks>
+          <excludes>
+            <exclude>${maven.exclude.tests}</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>${plugin.jar.version}</version>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <!-- workaround for https://bugs.openjdk.java.net/browse/JDK-8212233 -->
+          <javaApiLinks>
+            <property>
+              <name>foo</name>
+              <value>bar</value>
+            </property>
+          </javaApiLinks>
+        </configuration>
+      </plugin>
+
+      <!-- package the uber-jar -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>${plugin.assembly.version}</version>
+
+        <executions>
+          <execution>
+            <id>make-assembly</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <skipAssembly>${cmake.generate.skip}</skipAssembly>
+              <descriptors>
+                <descriptor>${project.basedir}/src/assembly/one-off-jar.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </execution>
+
+          <execution>
+            <id>fat-jar</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <skipAssembly>${jar.dependencies.skip}</skipAssembly>
+              <descriptorRefs>
+                <descriptorRef>jar-with-dependencies</descriptorRef>
+              </descriptorRefs>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- check for java 6 compatibility -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>animal-sniffer-maven-plugin</artifactId>
+        <version>${plugin.animalsniffer.version}</version>
+        <configuration>
+          <signature>
+            <groupId>org.codehaus.mojo.signature</groupId>
+            <artifactId>java16</artifactId>
+            <version>${plugin.signature.version}</version>
+          </signature>
+        </configuration>
+        <executions>
+          <execution>
+            <id>ensure-java-1.6-class-library</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+  </build>
+
+  <profiles>
+
+    <!-- Standard profile for compiling classes with widest target range.
+         The resulting jar just works on jre6+ as well as a part of JPMS.
+         Resulting artifact is deployable to Maven Central -->
+    <profile>
+      <id>jdk9+</id>
+      <activation>
+        <jdk>[9,)</jdk>
+      </activation>
+      <properties>
+        <javah.skip>true</javah.skip>
+        <maven.compiler.release>${target.java.version}</maven.compiler.release>
+        <plugin.animalsniffer.version>1.20</plugin.animalsniffer.version>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <compilerArgs>
+                <arg>-h</arg>
+                <arg>${cmake.generated.directory}</arg>
+              </compilerArgs>
+            </configuration>
+            <executions>
+              <!-- compile everything to ensure module-info contains right entries -->
+              <execution>
+                <id>default-compile</id>
+                <configuration>
+                  <release>9</release>
+                  <compileSourceRoots>
+                    <sourceRoot>src/main/java</sourceRoot>
+                    <sourceRoot>src/main/module-info</sourceRoot>
+                  </compileSourceRoots>
+                </configuration>
+              </execution>
+              <!-- recompile everything for target VM except the module-info.java -->
+              <execution>
+                <id>minimal-target-jre-recompile</id>
+                <goals><goal>compile</goal></goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!-- Convenience profile for users of JDKs past 11 who may want to
+         build the library ignoring no longer supported target version 6 -->
+    <profile>
+      <id>jdk12+</id>
+      <activation>
+        <jdk>[12,)</jdk>
+      </activation>
+      <properties>
+        <target.java.version>7</target.java.version>
+      </properties>
+    </profile>
+
+    <!-- collect existing native libraries for a distribution; skips native compilation -->
+    <profile>
+      <id>package</id>
+      <properties>
+        <javah.skip>true</javah.skip>
+        <maven.test.skip>true</maven.test.skip>
+        <cmake.build.skip>true</cmake.build.skip>
+        <cmake.generate.skip>true</cmake.generate.skip>
+      </properties>
+
+     <build>
+       <plugins>
+         <plugin>
+           <groupId>org.apache.maven.plugins</groupId>
+           <artifactId>maven-source-plugin</artifactId>
+           <executions>
+             <execution>
+               <id>attach-sources</id>
+               <goals>
+                 <goal>jar</goal>
+               </goals>
+             </execution>
+           </executions>
+         </plugin>
+
+         <plugin>
+           <groupId>org.apache.maven.plugins</groupId>
+           <artifactId>maven-javadoc-plugin</artifactId>
+           <executions>
+             <execution>
+               <id>attach-javadocs</id>
+               <goals>
+                 <goal>jar</goal>
+               </goals>
+             </execution>
+           </executions>
+         </plugin>
+       </plugins>
+     </build>
+    </profile>
+
+    <profile>
+      <id>jar-with-dependencies</id>
+      <properties>
+        <jar.dependencies.skip>false</jar.dependencies.skip>
+      </properties>
+    </profile>
+
+    <!-- Cross compile for aarch64 -->
+    <profile>
+      <id>aarch64</id>
+      <properties>
+        <os.target.arch>aarch_64</os.target.arch>
+      </properties>
+    </profile>
+
+    <!-- Cross compile for x86_64 -->
+    <profile>
+      <id>x86_64</id>
+      <properties>
+        <os.target.arch>x86_64</os.target.arch>
+      </properties>
+    </profile>
+
+    <!-- Cross compile for x86 -->
+    <profile>
+      <id>x86</id>
+      <properties>
+        <os.target.arch>x86_32</os.target.arch>
+      </properties>
+    </profile>
+
+    <!-- Cross compile for win32 using mingw -->
+    <profile>
+      <id>mingw32</id>
+      <properties>
+        <os.target.toolchain>Mingw32</os.target.toolchain>
+
+        <os.target.name>windows</os.target.name>
+        <os.target.arch>x86_32</os.target.arch>
+        <os.target.bitness>32</os.target.bitness>
+      </properties>
+    </profile>
+
+    <!-- Cross compile for win64 using mingw -->
+    <profile>
+      <id>mingw64</id>
+      <properties>
+        <os.target.toolchain>Mingw64</os.target.toolchain>
+
+        <os.target.name>windows</os.target.name>
+        <os.target.arch>x86_64</os.target.arch>
+        <os.target.bitness>64</os.target.bitness>
+      </properties>
+    </profile>
+
+    <!-- Cross compile for win arm64 using mingw -->
+    <profile>
+      <id>mingwaarch64</id>
+      <properties>
+        <os.target.toolchain>MingwAarch64</os.target.toolchain>
+
+        <os.target.name>windows</os.target.name>
+        <os.target.arch>aarch_64</os.target.arch>
+        <os.target.bitness>64</os.target.bitness>
+      </properties>
+    </profile>
+
+    <!-- Cross compile for ppc64 -->
+    <profile>
+      <id>ppc64</id>
+      <properties>
+        <os.target.toolchain>Ppc64</os.target.toolchain>
+
+        <os.target.name>linux</os.target.name>
+        <os.target.arch>ppc_64</os.target.arch>
+        <os.target.bitness>64</os.target.bitness>
+      </properties>
+    </profile>
+
+    <!-- Cross compile for arm32hf (hardware floating point) -->
+    <profile>
+      <id>armhf</id>
+      <properties>
+        <os.target.toolchain>Armhf</os.target.toolchain>
+
+        <os.target.name>linux</os.target.name>
+        <!-- TODO: namespace conflict with arm soft float library.  See also cmake's HAS_FPU -->
+        <os.target.arch>arm_32</os.target.arch>
+        <os.target.bitness>32</os.target.bitness>
+      </properties>
+    </profile>
+
+    <!-- Cross compile for arm32sf (software floating point) -->
+    <profile>
+      <id>armsf</id>
+      <properties>
+        <os.target.toolchain>Armsf</os.target.toolchain>
+
+        <os.target.name>linux</os.target.name>
+        <!-- TODO: namespace conflict with arm hard float library.  See also cmake's HAS_FPU -->
+        <os.target.arch>arm_32</os.target.arch>
+        <os.target.bitness>32</os.target.bitness>
+      </properties>
+    </profile>
+
+  </profiles>
+</project>
